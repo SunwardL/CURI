@@ -7,6 +7,7 @@ CURI is a local, privacy-first dashboard for Codex usage and OpenAI-compatible r
 - latest quota windows from `token_count.rate_limits` (unknown windows stay unknown)
 - today and daily history for input, cached, output and reasoning tokens
 - turns, identifiable model calls, errors and capacity failures
+- daily trend filtering by observed model and project
 - tool calls grouped as Shell, MCP, Browser/search and Other
 - structured relay events: status, attempts, latency, terminal state and requested/reported model differences
 - coverage dates and the last scan time
