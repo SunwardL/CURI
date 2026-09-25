@@ -3,10 +3,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from curi import Store, doctor
+from curi import Store, doctor, parser
 
 
 class CuriScanTests(unittest.TestCase):
+    def test_default_dashboard_port(self):
+        self.assertEqual(parser().parse_args(["serve"]).port, 8792)
+
     def test_incremental_scan_counts_usage_tools_quota_and_relay(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
