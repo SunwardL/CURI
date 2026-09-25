@@ -21,6 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from benchmarks import TestRunner
 from relay import RelayConfig, create_server
 
 
@@ -356,7 +357,7 @@ def doctor(codex_home: str, relay_events: str, db_path: str, archive_dir: str = 
 
 HTML = r'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CURI</title>
 <style>
-:root{--bg:#0c1117;--panel:#121a24;--line:#243243;--ink:#e9f1f7;--muted:#8da0b5;--cyan:#57e3d0;--orange:#ffb45b;--red:#ff7388}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% -20%,#1b3540 0,transparent 40%),var(--bg);color:var(--ink);font:15px/1.5 ui-sans-serif,system-ui,sans-serif}main{max-width:1180px;margin:0 auto;padding:42px 24px 72px}.eyebrow{color:var(--cyan);font:700 12px/1.2 ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase}.hero{display:flex;justify-content:space-between;gap:24px;align-items:end;margin-bottom:34px}.hero h1{font:800 clamp(36px,6vw,70px)/.95 Georgia,serif;letter-spacing:-.06em;margin:10px 0}.hero p{color:var(--muted);max-width:580px;margin:0}.pulse{border:1px solid #31525b;border-radius:999px;padding:8px 12px;color:var(--cyan);font:12px ui-monospace,monospace;white-space:nowrap}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:linear-gradient(145deg,#16222d,#101720);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 20px 60px #0003}.label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em}.value{font:700 29px/1.1 Georgia,serif;margin:9px 0}.small{color:var(--muted);font-size:12px}.section{margin-top:24px}.section h2{font:700 19px Georgia,serif;margin:0 0 12px}.wide{grid-column:span 2}.chart{height:210px;display:flex;align-items:end;gap:7px;padding-top:16px}.bar{background:linear-gradient(180deg,var(--cyan),#298a94);border-radius:5px 5px 2px 2px;min-width:10px;flex:1;position:relative}.bar span{position:absolute;top:100%;font-size:10px;color:var(--muted);transform:translateX(-20%);margin-top:7px}.rows{display:grid;gap:8px}.row{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #ffffff0a;padding:7px 0}.tag{font:12px ui-monospace,monospace;color:var(--orange)}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid #ffffff10}th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}.ok{color:var(--cyan)}.bad{color:var(--red)}@media(max-width:820px){.grid{grid-template-columns:repeat(2,1fr)}.wide{grid-column:span 2}.hero{display:block}.pulse{display:inline-block;margin-top:14px}}@media(max-width:520px){main{padding:28px 14px}.grid{grid-template-columns:1fr}.wide{grid-column:span 1}}
+:root{--bg:#0c1117;--panel:#121a24;--line:#243243;--ink:#e9f1f7;--muted:#8da0b5;--cyan:#57e3d0;--orange:#ffb45b;--red:#ff7388}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% -20%,#1b3540 0,transparent 40%),var(--bg);color:var(--ink);font:15px/1.5 ui-sans-serif,system-ui,sans-serif}main{max-width:1180px;margin:0 auto;padding:42px 24px 72px}.eyebrow{color:var(--cyan);font:700 12px/1.2 ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase}.hero{display:flex;justify-content:space-between;gap:24px;align-items:end;margin-bottom:34px}.hero h1{font:800 clamp(36px,6vw,70px)/.95 Georgia,serif;letter-spacing:-.06em;margin:10px 0}.hero p{color:var(--muted);max-width:580px;margin:0}.pulse{border:1px solid #31525b;border-radius:999px;padding:8px 12px;color:var(--cyan);font:12px ui-monospace,monospace;white-space:nowrap}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:linear-gradient(145deg,#16222d,#101720);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 20px 60px #0003}.label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.12em}.value{font:700 29px/1.1 Georgia,serif;margin:9px 0}.small{color:var(--muted);font-size:12px}.section{margin-top:24px}.section h2{font:700 19px Georgia,serif;margin:0 0 12px}.wide{grid-column:span 2}.chart{height:210px;display:flex;align-items:end;gap:7px;padding-top:16px}.bar{background:linear-gradient(180deg,var(--cyan),#298a94);border-radius:5px 5px 2px 2px;min-width:10px;flex:1;position:relative}.bar span{position:absolute;top:100%;font-size:10px;color:var(--muted);transform:translateX(-20%);margin-top:7px}.rows{display:grid;gap:8px}.row{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #ffffff0a;padding:7px 0}.tag{font:12px ui-monospace,monospace;color:var(--orange)}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid #ffffff10}th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}.ok{color:var(--cyan)}.bad{color:var(--red)}button{background:var(--cyan);border:0;border-radius:8px;color:#062322;font:700 13px ui-monospace,monospace;padding:9px 12px;cursor:pointer}button:disabled{opacity:.45;cursor:wait}.test-buttons{display:flex;gap:8px;flex-wrap:wrap}.test-result{margin-top:14px;white-space:pre-wrap;background:#091018;border:1px solid #ffffff10;border-radius:8px;padding:12px;max-height:420px;overflow:auto}.test-result img{display:block;max-width:100%;max-height:360px;background:#fff;border-radius:6px}@media(max-width:820px){.grid{grid-template-columns:repeat(2,1fr)}.wide{grid-column:span 2}.hero{display:block}.pulse{display:inline-block;margin-top:14px}}@media(max-width:520px){main{padding:28px 14px}.grid{grid-template-columns:1fr}.wide{grid-column:span 1}}
 </style></head><body><main><div class="hero"><div><div class="eyebrow">CURI / local observability</div><h1>Know the request<br>behind the request.</h1><p>A private, loopback-only view of Codex usage, tools, quotas and relay behavior. No prompts. No responses. No telemetry.</p></div><div class="pulse" id="updated">waiting for first scan</div></div><div class="grid" id="cards"></div><div class="section grid"><div class="card wide"><h2>Daily signal</h2><div class="filters"><select id="modelFilter"><option value="">All models</option></select><select id="projectFilter"><option value="">All projects</option></select></div><div class="chart" id="chart"></div></div><div class="card"><h2>Quota windows</h2><div class="rows" id="quota"></div></div><div class="card"><h2>Tool activity</h2><div class="rows" id="tools"></div></div></div><div class="section grid"><div class="card wide"><h2>Models observed</h2><div class="rows" id="models"></div></div><div class="card"><h2>Coverage</h2><div class="rows" id="coverage"></div></div><div class="card wide"><h2>Recent relay events</h2><table><thead><tr><th>Time</th><th>Requested</th><th>Reported</th><th>Status</th><th>Attempts</th><th>Latency</th></tr></thead><tbody id="relay"></tbody></table></div></div></main><script>
 const $=id=>document.getElementById(id), n=v=>v==null?'—':Number(v).toLocaleString(), esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function card(label,value,sub,cls=''){return `<div class="card"><div class="label">${label}</div><div class="value ${cls}">${value}</div><div class="small">${sub||''}</div></div>`}
@@ -369,10 +370,15 @@ const rows=r.recent||[];$('relay').innerHTML=rows.length?rows.map(x=>`<tr><td>${
 async function refresh(){try{const r=await fetch('/api/summary');render(await r.json())}catch(e){$('updated').textContent='waiting for CURI scanner'}}refresh();setInterval(refresh,3000);
 </script></body></html>'''
 
+HTML = HTML.replace('id="cards"></div>', 'id="cards"></div><div class="section card"><h2>Classic tests</h2><div class="small">Run the fixed candy logic puzzle or the pelican-on-a-bicycle SVG probe through the configured model. Results stay local.</div><div class="test-buttons"><button id="candyButton" onclick="runTest(\'candy\')">Run candy test</button><button id="pelicanButton" onclick="runTest(\'pelican\')">Run pelican test</button></div><div class="small" id="testStatus">Configure <code>--test-model</code> to enable these buttons.</div><div class="test-result" id="testResult">No test run yet.</div></div>')
+HTML = HTML.replace('</script></body></html>', '''async function runTest(kind){const buttons=[$('candyButton'),$('pelicanButton')];buttons.forEach(x=>x.disabled=true);$('testStatus').textContent=`running ${kind} test…`;$('testResult').textContent='';try{const response=await fetch('/api/tests/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind})});const result=await response.json();if(!response.ok)throw new Error(result.error||'test failed');$('testStatus').textContent=`${result.model} · ${result.latency_ms} ms`;if(kind==='pelican'&&result.svg){$('testResult').innerHTML=`<img alt="pelican test result" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(result.svg)}">`}else{$('testResult').textContent=result.text||'The model returned no text.'}}catch(error){$('testStatus').textContent='test unavailable';$('testResult').textContent=error.message}finally{buttons.forEach(x=>x.disabled=false)}}
+</script></body></html>''')
+
 
 class Handler(BaseHTTPRequestHandler):
     store: Store
     config: dict[str, str]
+    test_runner: TestRunner | None = None
     def do_GET(self) -> None:
         if self.path == "/healthz":
             self._send(200, {"status": "ok", "last_scan": self.store.last_scan})
@@ -383,6 +389,21 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200); self.send_header("Content-Type", "text/html; charset=utf-8"); self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data)
         else:
             self.send_error(404)
+    def do_POST(self) -> None:
+        if self.path != "/api/tests/run":
+            self.send_error(404)
+            return
+        if self.test_runner is None:
+            self._send(503, {"error": "classic tests are not configured; start serve with --upstream and --test-model"})
+            return
+        try:
+            length = min(int(self.headers.get("Content-Length", "0") or 0), 4096)
+            payload = json.loads(self.rfile.read(length)) if length else {}
+            result = self.test_runner.run(str(payload.get("kind", "")))
+            self._send(200, {"kind": result.kind, "model": result.model, "text": result.text,
+                             "svg": result.svg, "latency_ms": result.latency_ms})
+        except (ValueError, RuntimeError) as exc:
+            self._send(400, {"error": str(exc)})
     def _send(self, status: int, payload: dict[str, Any]) -> None:
         data = json.dumps(payload, ensure_ascii=False).encode()
         self.send_response(status); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data)
@@ -393,6 +414,9 @@ class Handler(BaseHTTPRequestHandler):
 def serve(args: argparse.Namespace) -> None:
     store = Store(args.db)
     Handler.store = store
+    test_base_url = args.test_base_url or (f"http://{args.relay_host}:{args.relay_port}/v1" if args.upstream else "")
+    Handler.test_runner = TestRunner(test_base_url, args.test_model, args.test_api_key,
+                                     args.test_format, args.test_timeout) if args.test_model and test_base_url else None
     def scan_loop() -> None:
         while True:
             store.scan(args.codex_home, args.relay_events, args.archive_dir)
@@ -437,6 +461,11 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--retry-backoff", type=float, default=0.5)
     s.add_argument("--request-timeout", type=float, default=120.0)
     s.add_argument("--buffer-until-success", action="store_true", help="buffer SSE until response.completed")
+    s.add_argument("--test-model", default=os.getenv("CURI_TEST_MODEL", ""), help="model used by the built-in tests")
+    s.add_argument("--test-api-key", default=os.getenv("CURI_TEST_API_KEY", ""), help="optional in-memory test key")
+    s.add_argument("--test-base-url", default=os.getenv("CURI_TEST_BASE_URL", ""), help="OpenAI-compatible test base URL")
+    s.add_argument("--test-format", choices=("responses", "chat"), default=os.getenv("CURI_TEST_FORMAT", "responses"))
+    s.add_argument("--test-timeout", type=float, default=120.0)
     s = sub.add_parser("relay", help="start the local OpenAI-compatible retry relay")
     s.add_argument("--upstream", default=os.getenv("UPSTREAM_BASE_URL", ""), required=False)
     s.add_argument("--host", default="127.0.0.1")
