@@ -2,6 +2,8 @@
 
 CURI is a local, privacy-first dashboard for Codex usage and OpenAI-compatible relay reliability. It reads local JSONL files, stores only aggregate metadata in SQLite, and serves a loopback-only dashboard.
 
+It includes the local retry relay. The relay and dashboard can run together, so CURI is both the observer and the local request boundary.
+
 ## What it shows
 
 - latest quota windows from `token_count.rate_limits` (unknown windows stay unknown)
@@ -10,6 +12,7 @@ CURI is a local, privacy-first dashboard for Codex usage and OpenAI-compatible r
 - daily trend filtering by observed model and project
 - tool calls grouped as Shell, MCP, Browser/search and Other
 - structured relay events: status, attempts, latency, terminal state and requested/reported model differences
+- a local OpenAI-compatible relay with transport/temporary-error retries and safe SSE reconnects
 - coverage dates and the last scan time
 
 CURI does not read `auth.json`, request bodies, prompts, response text or API keys. It sends no telemetry.
@@ -20,10 +23,12 @@ Python 3.10+ is enough.
 
 ```bash
 python curi.py doctor
-python curi.py serve
+python curi.py serve --upstream https://api.example.com/v1
 ```
 
 Open <http://127.0.0.1:8792>. CURI scans `~/.codex/sessions` every three seconds. Override paths when needed:
+
+The relay listens on `http://127.0.0.1:8080/v1`; point Codex's API base URL at that address and keep the CURI process running. Your existing API key remains in Codex and is forwarded to the configured upstream; CURI never stores it.
 
 ```bash
 python curi.py serve \
@@ -38,7 +43,15 @@ Run a one-shot scan and inspect JSON:
 python curi.py scan  # use `doctor --json` for machine-readable diagnostics
 ```
 
-The relay side is intentionally an input contract. A relay (including Steady Relay or your own proxy) can append one JSON object per line:
+To run only the relay:
+
+```bash
+python curi.py relay --upstream https://api.example.com/v1
+```
+
+The relay retries connection failures, timeouts, `408/425/429/5xx`, and recognized capacity/usage-limit SSE failures before real output or tool-call data reaches Codex. Once output is committed, it closes the incomplete stream instead of replaying a request that could duplicate text or a tool call. `--buffer-until-success` enables the stronger mode that holds SSE in memory until `response.completed`; its per-attempt limit is 64 MiB.
+
+The relay appends one metadata-only JSON object per request to `~/.curi/relay-events.jsonl`:
 
 ```json
 {"schema_version":1,"timestamp":"2026-09-25T12:00:00Z","request_id":"req-1","requested_model":"model-a","reported_model":"model-a","status":200,"attempts":2,"first_byte_ms":420,"duration_ms":3800,"error_class":null,"stream_terminal":"response.completed"}
@@ -53,11 +66,11 @@ python -m unittest -v
 python -m py_compile curi.py
 ```
 
-The project deliberately has no runtime dependencies. The dashboard is served by Python's standard library. The scanner uses file offsets and resumes safely after a restart; a truncated or rewritten JSONL file is rescanned from the beginning.
+The project deliberately has no runtime dependencies. The dashboard and relay use Python's standard library. The scanner uses file offsets and resumes safely after a restart; a truncated or rewritten JSONL file is rescanned from the beginning.
 
 ## Design boundaries
 
-CURI observes local events; it does not automatically route between providers, run probes, evaluate answer quality, or copy Codex credentials. Relay retry safety remains the relay's responsibility: retries are only safe before real output or tool-call data has been committed to a client.
+CURI does not automatically route between providers, run probes, evaluate answer quality, or copy Codex credentials. It keeps the relay and monitor in one project but they remain separate local roles: the relay handles forwarding/retry, while the monitor parses local usage and relay events.
 
 The integration direction was informed by [Steady Relay](https://github.com/937204197/steady-relay) and [Codex Model Watch](https://github.com/ysh1112/codex-model-watch). See [NOTICE.md](NOTICE.md) for attribution and license notes.
 

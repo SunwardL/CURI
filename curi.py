@@ -21,6 +21,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from relay import RelayConfig, create_server
+
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS files(
@@ -396,6 +398,15 @@ def serve(args: argparse.Namespace) -> None:
             store.scan(args.codex_home, args.relay_events, args.archive_dir)
             time.sleep(max(1, args.interval))
     threading.Thread(target=scan_loop, daemon=True).start()
+    relay_server = None
+    if args.upstream:
+        relay_server = create_server(RelayConfig(
+            upstream=args.upstream, host=args.relay_host, port=args.relay_port,
+            max_retries=args.max_retries, backoff_seconds=args.retry_backoff,
+            request_timeout=args.request_timeout, event_path=args.relay_events,
+            buffer_until_success=args.buffer_until_success))
+        threading.Thread(target=relay_server.serve_forever, daemon=True).start()
+        print(f"CURI relay listening at http://{args.relay_host}:{relay_server.server_port}/v1")
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     print(f"CURI listening at http://127.0.0.1:{args.port} (loopback only)")
     try:
@@ -404,6 +415,9 @@ def serve(args: argparse.Namespace) -> None:
         pass
     finally:
         server.server_close()
+        if relay_server is not None:
+            relay_server.shutdown()
+            relay_server.server_close()
 
 
 def parser() -> argparse.ArgumentParser:
@@ -416,6 +430,22 @@ def parser() -> argparse.ArgumentParser:
         s.add_argument("--db", default=os.getenv("CURI_DB", str(Path.home() / ".curi" / "curi.sqlite3")))
     s = sub.add_parser("serve", help="scan and serve the local dashboard")
     common(s); s.add_argument("--port", type=int, default=8792); s.add_argument("--interval", type=int, default=3)
+    s.add_argument("--upstream", default=os.getenv("UPSTREAM_BASE_URL", ""), help="also start the local retry relay")
+    s.add_argument("--relay-host", default="127.0.0.1")
+    s.add_argument("--relay-port", type=int, default=8080)
+    s.add_argument("--max-retries", type=int, default=3)
+    s.add_argument("--retry-backoff", type=float, default=0.5)
+    s.add_argument("--request-timeout", type=float, default=120.0)
+    s.add_argument("--buffer-until-success", action="store_true", help="buffer SSE until response.completed")
+    s = sub.add_parser("relay", help="start the local OpenAI-compatible retry relay")
+    s.add_argument("--upstream", default=os.getenv("UPSTREAM_BASE_URL", ""), required=False)
+    s.add_argument("--host", default="127.0.0.1")
+    s.add_argument("--port", type=int, default=8080)
+    s.add_argument("--relay-events", default=os.getenv("CURI_RELAY_EVENTS", str(Path.home() / ".curi" / "relay-events.jsonl")))
+    s.add_argument("--max-retries", type=int, default=3)
+    s.add_argument("--retry-backoff", type=float, default=0.5)
+    s.add_argument("--request-timeout", type=float, default=120.0)
+    s.add_argument("--buffer-until-success", action="store_true", help="buffer SSE until response.completed")
     s = sub.add_parser("scan", help="scan local JSONL once and print a summary")
     common(s); s.add_argument("--days", type=int, default=0)
     s = sub.add_parser("doctor", help="check local paths without reading credentials")
@@ -429,6 +459,13 @@ def main(argv: list[str] | None = None) -> int:
         ok, checks = doctor(args.codex_home, args.relay_events, args.db, args.archive_dir)
         print(json.dumps({"ok": ok, "checks": checks}, ensure_ascii=False, indent=2) if args.json else "\n".join(f"{'OK' if x['ok'] else 'MISSING'}  {x['name']}: {x['path']}" for x in checks))
         return 0 if ok else 1
+    if args.command == "relay":
+        from relay import serve as serve_relay
+        serve_relay(RelayConfig(upstream=args.upstream, host=args.host, port=args.port,
+                                max_retries=args.max_retries, backoff_seconds=args.retry_backoff,
+                                request_timeout=args.request_timeout, event_path=args.relay_events,
+                                buffer_until_success=args.buffer_until_success))
+        return 0
     store = Store(args.db)
     stats = store.scan(args.codex_home, args.relay_events, args.archive_dir)
     if args.command == "scan":
