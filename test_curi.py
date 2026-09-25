@@ -3,12 +3,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from curi import Store, doctor, parser
+from curi import HTML, Store, doctor, parser
 
 
 class CuriScanTests(unittest.TestCase):
     def test_default_dashboard_port(self):
         self.assertEqual(parser().parse_args(["serve"]).port, 8792)
+
+    def test_dashboard_has_classic_test_controls(self):
+        self.assertIn("Classic tests", HTML)
+        self.assertIn("/api/tests/run", HTML)
 
     def test_incremental_scan_counts_usage_tools_quota_and_relay(self):
         with tempfile.TemporaryDirectory() as tmp:

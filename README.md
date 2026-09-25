@@ -30,6 +30,18 @@ Open <http://127.0.0.1:8792>. CURI scans `~/.codex/sessions` every three seconds
 
 The relay listens on `http://127.0.0.1:8080/v1`; point Codex's API base URL at that address and keep the CURI process running. Your existing API key remains in Codex and is forwarded to the configured upstream; CURI never stores it.
 
+Enable the built-in classic tests by supplying a model. The dashboard then shows two buttons under **Classic tests**:
+
+```bash
+CURI_TEST_API_KEY=your-key python curi.py serve \
+  --upstream https://api.example.com/v1 \
+  --test-model your-model
+```
+
+The candy button sends the fixed minimum-draw logic puzzle and displays the model's text answer. The pelican button sends `Generate an SVG of a pelican riding a bicycle` and renders a sanitized SVG result. Prompts and responses stay in memory and are never written to the usage database or relay event file; only the normal metadata-only relay event may be recorded. For a Chat Completions provider, add `--test-format chat`; for a separate compatible endpoint, use `--test-base-url`.
+
+The bundled candy wording follows the public candy-v2 prompt, including its “no tools and no web” constraint and first-line answer rule. The pelican wording follows Simon Willison's canonical prompt exactly; neither test adds hidden task-specific hints.
+
 ```bash
 python curi.py serve \
   --codex-home ~/.codex \
@@ -63,7 +75,7 @@ Do not write secrets or full payloads to that file. `reported_model` remains `un
 
 ```bash
 python -m unittest -v
-python -m py_compile curi.py
+python -m py_compile curi.py relay.py benchmarks.py
 ```
 
 The project deliberately has no runtime dependencies. The dashboard and relay use Python's standard library. The scanner uses file offsets and resumes safely after a restart; a truncated or rewritten JSONL file is rescanned from the beginning.
