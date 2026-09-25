@@ -1,4 +1,8 @@
-"""Built-in CURI model probes for the classic candy and pelican tests."""
+"""Built-in CURI model probes for the classic candy and pelican tests.
+
+The candy wording follows the public candy-v2 prompt shown by Help AIO:
+https://www.helpaio.com/transit/crowdtest/runs/qedc67cc8h
+"""
 from __future__ import annotations
 
 import json
@@ -11,18 +15,23 @@ from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
 
-CANDY_PROMPT = """请解决下面的糖果测试。只使用题目给出的数量，求“最少摸出多少颗”才能保证手中同时有不同形状的苹果味和桃子味糖果。请给出最小值，并分别证明这个数量足够、少一颗不够。
+CANDY_PROMPT = """不允许调用工具和联网
 
-黑色袋子中有三种口味，每种口味有圆形和五角星形两种形状：
+在一个黑色的袋子里放有三种口味的糖果，每种糖果有两种不同的形状（圆形和五角星形，不同的形状靠手感可以分辨）。现已知不同口味的糖和不同形状的数量统计如下表。参赛者需要在活动前决定摸出的糖果数目，那么，最少取出多少个糖果才能保证手中同时拥有不同形状的苹果味和桃子味的糖？（同时手中有圆形苹果味匹配五角星桃子味糖果，或者有圆形桃子味匹配五角星苹果味糖果都满足要求）
 
 |        | 苹果味 | 桃子味 | 西瓜味 |
 |--------|--------|--------|--------|
 | 圆形   | 7      | 9      | 8      |
-| 五角星 | 7      | 6      | 4      |
+| 五角星形 | 7    | 6      | 4      |
 
-只要出现圆形苹果味与五角星桃子味，或圆形桃子味与五角星苹果味，就算满足条件。"""
+作答与交付约定
 
-PELICAN_PROMPT = """Generate an SVG of a pelican riding a bicycle. Return only one complete, self-contained SVG document, with no Markdown fences or explanation. The SVG should visibly contain a recognizable pelican, two bicycle wheels, a bicycle frame, and the pelican's feet on the pedals."""
+1. 在最终回答的第一行只写一个纯阿拉伯整数，不带单位、标点或解释。
+2. 第二行起可以写推理过程，仅供人工查看，不参与判分。
+3. CLI 会将最终回答自动保存为 `/workspace/answer.txt`，无需你创建或修改任何文件。"""
+
+# Canonical Simon Willison prompt: https://simonwillison.net/2024/Oct/25/pelicans-on-a-bicycle/
+PELICAN_PROMPT = "Generate an SVG of a pelican riding a bicycle"
 
 
 @dataclass(frozen=True)

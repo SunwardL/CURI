@@ -3,7 +3,7 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from benchmarks import TestRunner, sanitize_svg
+from benchmarks import CANDY_PROMPT, PELICAN_PROMPT, TestRunner, sanitize_svg
 
 
 class BenchmarkUpstream(BaseHTTPRequestHandler):
@@ -27,6 +27,11 @@ class BenchmarkUpstream(BaseHTTPRequestHandler):
 
 
 class BenchmarkTests(unittest.TestCase):
+    def test_canonical_prompts(self):
+        self.assertIn("不允许调用工具和联网", CANDY_PROMPT)
+        self.assertIn("第一行只写一个纯阿拉伯整数", CANDY_PROMPT)
+        self.assertEqual(PELICAN_PROMPT, "Generate an SVG of a pelican riding a bicycle")
+
     def setUp(self):
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), BenchmarkUpstream)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()

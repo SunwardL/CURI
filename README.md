@@ -40,6 +40,8 @@ CURI_TEST_API_KEY=your-key python curi.py serve \
 
 The candy button sends the fixed minimum-draw logic puzzle and displays the model's text answer. The pelican button sends `Generate an SVG of a pelican riding a bicycle` and renders a sanitized SVG result. Prompts and responses stay in memory and are never written to the usage database or relay event file; only the normal metadata-only relay event may be recorded. For a Chat Completions provider, add `--test-format chat`; for a separate compatible endpoint, use `--test-base-url`.
 
+The bundled candy wording follows the public candy-v2 prompt, including its “no tools and no web” constraint and first-line answer rule. The pelican wording follows Simon Willison's canonical prompt exactly; neither test adds hidden task-specific hints.
+
 ```bash
 python curi.py serve \
   --codex-home ~/.codex \
