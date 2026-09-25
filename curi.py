@@ -415,7 +415,7 @@ def parser() -> argparse.ArgumentParser:
         s.add_argument("--archive-dir", default=os.getenv("CURI_ARCHIVE_DIR", ""))
         s.add_argument("--db", default=os.getenv("CURI_DB", str(Path.home() / ".curi" / "curi.sqlite3")))
     s = sub.add_parser("serve", help="scan and serve the local dashboard")
-    common(s); s.add_argument("--port", type=int, default=8787); s.add_argument("--interval", type=int, default=3)
+    common(s); s.add_argument("--port", type=int, default=8792); s.add_argument("--interval", type=int, default=3)
     s = sub.add_parser("scan", help="scan local JSONL once and print a summary")
     common(s); s.add_argument("--days", type=int, default=0)
     s = sub.add_parser("doctor", help="check local paths without reading credentials")

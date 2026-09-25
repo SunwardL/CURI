@@ -23,7 +23,7 @@ python curi.py doctor
 python curi.py serve
 ```
 
-Open <http://127.0.0.1:8787>. CURI scans `~/.codex/sessions` every three seconds. Override paths when needed:
+Open <http://127.0.0.1:8792>. CURI scans `~/.codex/sessions` every three seconds. Override paths when needed:
 
 ```bash
 python curi.py serve \
