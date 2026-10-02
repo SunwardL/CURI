@@ -373,6 +373,13 @@ async function refresh(){try{const r=await fetch('/api/summary');render(await r.
 class Handler(BaseHTTPRequestHandler):
     store: Store
     config: dict[str, str]
+    cors_origins = {
+        "http://localhost:1420",
+        "http://127.0.0.1:1420",
+        "http://tauri.localhost",
+        "tauri://localhost",
+    }
+
     def do_GET(self) -> None:
         if self.path == "/healthz":
             self._send(200, {"status": "ok", "last_scan": self.store.last_scan})
@@ -383,9 +390,32 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200); self.send_header("Content-Type", "text/html; charset=utf-8"); self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data)
         else:
             self.send_error(404)
+
+    def do_OPTIONS(self) -> None:
+        origin = self.headers.get("Origin")
+        if self.path not in {"/api/summary", "/healthz"} or origin not in self.cors_origins:
+            self.send_error(403)
+            return
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", origin)
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Vary", "Origin")
+        if self.headers.get("Access-Control-Request-Private-Network") == "true":
+            self.send_header("Access-Control-Allow-Private-Network", "true")
+        self.end_headers()
+
     def _send(self, status: int, payload: dict[str, Any]) -> None:
         data = json.dumps(payload, ensure_ascii=False).encode()
-        self.send_response(status); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data)
+        self.send_response(status)
+        origin = self.headers.get("Origin")
+        if origin in self.cors_origins:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
     def log_message(self, *_: Any) -> None:
         return
 
@@ -408,7 +438,7 @@ def serve(args: argparse.Namespace) -> None:
         threading.Thread(target=relay_server.serve_forever, daemon=True).start()
         print(f"CURI relay listening at http://{args.relay_host}:{relay_server.server_port}/v1")
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"CURI listening at http://127.0.0.1:{args.port} (loopback only)")
+    print(f"CURI listening at http://127.0.0.1:{server.server_address[1]} (loopback only)", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

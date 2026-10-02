@@ -43,6 +43,20 @@ Run a one-shot scan and inspect JSON:
 python curi.py scan  # use `doctor --json` for machine-readable diagnostics
 ```
 
+## Desktop app (Windows and macOS)
+
+The desktop shell and React dashboard live in `desktop/`. Python continues to scan local Codex logs and expose the existing summary API.
+
+```bash
+cd desktop
+npm install
+npm run desktop:dev
+```
+
+For a distributable build, install the build-only Python dependency with `python -m pip install -r requirements-build.txt`, then run `npm run desktop:build`. Build on the target operating system; macOS distribution also needs Apple code signing and notarization.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for separate frontend/backend startup steps and Windows/macOS packaging details.
+
 To run only the relay:
 
 ```bash

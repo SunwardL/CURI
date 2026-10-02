@@ -6,3 +6,8 @@ venv/
 .curi/
 curi.sqlite3
 relay-events.jsonl
+desktop/node_modules/
+desktop/dist/
+desktop/.build/
+desktop/src-tauri/target/
+desktop/src-tauri/binaries/curi-backend-*

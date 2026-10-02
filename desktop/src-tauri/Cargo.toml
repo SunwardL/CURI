@@ -1,0 +1,17 @@
+[package]
+name = "curi-desktop"
+version = "0.1.0"
+description = "CURI local usage dashboard"
+authors = ["CURI"]
+edition = "2021"
+
+[lib]
+name = "curi_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
